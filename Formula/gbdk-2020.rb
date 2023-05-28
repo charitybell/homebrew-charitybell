@@ -1,0 +1,59 @@
+class Gbdk2020 < Formula
+  desc "An updated version of GBDK, A C compiler, assembler, linker and set of libraries for the Z80 like Nintendo Gameboy."
+  homepage "https://gbdk-2020.github.io/gbdk-2020/"
+  url "https://github.com/gbdk-2020/gbdk-2020/archive/refs/tags/4.1.1.tar.gz"
+  sha256 "70f30b3ea00dd827013dd731cc1dff4e0003fa1e884f8908ccffd025c2a1d19b"
+  head "https://github.com/gbdk-2020/gbdk-2020.git", branch: "develop"
+  license all_of: [
+    "MIT", # png2asset
+    "Zlib", # crashhandler, makebin
+    :cannot_represent, # LCC
+    "GPL-2.0-only" => { with: "GPL-2.0-linking-exception" }, # GBDK library, SDCC runtime
+    any_of: ["Unlicense", :public_domain],  # bankpack, gbcompress, ihxcheck, makecom
+  ]
+
+  depends_on "gcc" => :build
+  depends_on "doxygen" => :build
+  depends_on "gputils" => :build
+  depends_on "texinfo" => :build
+
+  keg_only "Shadows system headers"
+
+  fails_with :clang do
+    build 1403
+    cause "Build errors with clang"
+  end
+
+  resource "sdcc" do
+    url "https://sourceforge.net/code-snapshots/svn/s/sd/sdcc/code/sdcc-code-r13350-trunk-sdcc.zip"
+    sha256 "567536f133c3526065ff8327afa2de105936dd8deb80c56771bea976827eadf4"
+  end
+
+  def install
+    sdccdir = ""
+    resource("sdcc").stage do |context|
+      context.retain!
+      system "./configure", *std_configure_args
+      system "make"
+      sdccdir = "#{context.staging.tmpdir.to_s}/sdcc-code-r13350-trunk-sdcc"
+    end
+
+    # we can get through most of a parallel build. when it fails, we finish the build de-parallelized
+    # this is fixed in HEAD
+    begin
+      system "make", "SDCCDIR=#{sdccdir}"
+    rescue
+      ENV.deparallelize
+      system "make", "SDCCDIR=#{sdccdir}"
+    end
+
+    bin.install Dir["build/gbdk/bin/*"]
+    doc.install "build/gbdk/examples"
+    include.install Dir["build/gbdk/include/*"]
+    lib.install Dir["build/gbdk/lib/*"]
+  end
+
+  test do
+    system bin/'gbdk', "--help"
+  end
+end
