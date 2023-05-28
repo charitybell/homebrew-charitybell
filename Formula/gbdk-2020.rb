@@ -24,9 +24,16 @@ class Gbdk2020 < Formula
     cause "Build errors with clang"
   end
 
-  resource "sdcc" do
-    url "https://sourceforge.net/code-snapshots/svn/s/sd/sdcc/code/sdcc-code-r13350-trunk-sdcc.zip"
-    sha256 "567536f133c3526065ff8327afa2de105936dd8deb80c56771bea976827eadf4"
+  if OS.mac?
+    resource "sdcc" do
+      url "https://github.com/gbdk-2020/gbdk-2020-sdcc/releases/download/sdcc-13350-patched-gbdk-4.1.0/sdcc-x86_64-apple-macosx-20220402-13350--sdldz80-patched-at-12539.tar.bz2"
+      sha256 "3936898bad8ab8e564b24b7bce4605fb3acb2bfc633329eb7bdac453afda69bc"
+    end
+  else
+    resource "sdcc" do
+      url "https://github.com/gbdk-2020/gbdk-2020-sdcc/releases/download/sdcc-13350-patched-gbdk-4.1.0/sdcc-amd64-linux2.5-20220402-13350--sdldz80-patched-at-12539.tar.bz2"
+      sha256 "2ce1ff208ddbd7ad1ddfb1770ede48b9cb1a60d13079ba1ca0052ba5c1b51873"
+    end
   end
 
   def install
