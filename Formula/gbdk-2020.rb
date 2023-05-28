@@ -7,7 +7,7 @@ class Gbdk2020 < Formula
     "MIT", # png2asset
     "Zlib", # crashhandler, makebin
     :cannot_represent, # LCC
-    "GPL-2.0-only" => { with: "GPL-2.0-linking-exception" }, # GBDK library, SDCC runtime
+    "GPL-2.0-only" => { with: "GCC-exception-2.0" }, # GBDK library, SDCC runtime
     any_of: ["Unlicense", :public_domain], # bankpack, gbcompress, ihxcheck, makecom
   ]
   head "https://github.com/gbdk-2020/gbdk-2020.git", branch: "develop"
