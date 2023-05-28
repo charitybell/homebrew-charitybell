@@ -40,9 +40,7 @@ class Gbdk2020 < Formula
     sdccdir = ""
     resource("sdcc").stage do |context|
       context.retain!
-      system "./configure", *std_configure_args
-      system "make"
-      sdccdir = "#{context.staging.tmpdir}/sdcc-code-r13350-trunk-sdcc"
+      sdccdir = "#{context.staging.tmpdir}/sdcc"
     end
 
     # we can get through most of a parallel build. when it fails, we finish the build de-parallelized
