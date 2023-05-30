@@ -8,6 +8,7 @@ on:
 jobs:
   prepare:
     outputs:
+      casks: ${{ steps.set-output-matrix.outputs.casks }}
       formula: ${{ steps.set-output-matrix.outputs.formula }}
     runs-on: ubuntu-latest
     steps:
@@ -20,12 +21,41 @@ jobs:
     - id: changed-files
       uses: tj-actions/changed-files@v35
       with:
-        files: Formula/*.rb
+        files: |
+          Casks/*.rb
+          Formula/*.rb
         json: true
         json_raw_format: true
 
     - id: set-output-matrix
-      run: echo 'formula=${{ steps.changed-files.outputs.all_changed_files }}' >> $GITHUB_OUTPUT
+        run: |
+          echo casks=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | jq -rc '[.[] | select(. | startswith("Casks"))]') >> $GITHUB_OUTPUT
+          echo formula=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | jq -rc '[.[] | select(. | startswith("Formula"))]') >> $GITHUB_OUTPUT
+
+  tag-casks:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.casks != '[]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - uses: Homebrew/actions/git-user-config@master
+
+      - uses: Homebrew/actions/setup-homebrew@master
+
+      - name: tag casks
+        run: |
+          for cask in $(echo ${{ needs.prepare.outputs.cask }} | jq -rc .[]); do
+            FORMULA_NAME="$(basename $cask .rb)"
+            FORMULA_VERSION=$(grep "version " "$cask" | head -n 1 | awk '{ print $2 }')
+            TAG_MESSAGE="${FORMULA_NAME}-${FORMULA_VERSION}"
+
+            git tag -a "$TAG_MESSAGE" -m "$TAG_MESSAGE"
+          done
+          git -c push.default=current push --tags
+          git -c push.default=current push
 
   build:
     needs: prepare
