@@ -7,7 +7,7 @@ class DartSdk < Formula
   head "https://github.com/dart-lang/sdk.git", branch: "main"
 
   depends_on xcode: :build
-  depends_on "python@3.11" => :build
+  uses_from_macos "python@3.11" => :build
 
   resource "depot-tools" do
     url "https://chromium.googlesource.com/chromium/tools/depot_tools.git", branch: "main"
