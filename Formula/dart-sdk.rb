@@ -3,7 +3,7 @@ class DartSdk < Formula
   homepage "https://dart.dev"
   url "https://github.com/dart-lang/sdk/archive/refs/tags/3.0.5.tar.gz"
   sha256 "f5d75042e7b3081816b19dcee196885769420e0bcbdf0ff3c32e5bb4896ff9a6"
-  license "GPL-2.0-or-later"
+  license "BSD-3-Clause"
   head "https://github.com/dart-lang/sdk.git", branch: "main"
 
   depends_on xcode: :build
