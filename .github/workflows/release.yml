@@ -8,6 +8,9 @@ on:
       - 'Casks/**.rb'
       - 'Formula/**.rb'
 
+env:
+  GITHUB_REPOSITORY: ${{ github.repository }}
+
 jobs:
   prepare:
     outputs:
@@ -33,9 +36,11 @@ jobs:
         json_raw_format: true
 
     - id: set-output-matrix
+      env:
+        CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
       run: |
-        echo casks=$(echo '${{ steps.changed-files.outputs.all_changed_files }}' | jq -rc '[.[] | select(. | startswith("Casks"))]') >> $GITHUB_OUTPUT
-        echo formula=$(echo '${{ steps.changed-files.outputs.all_changed_files }}' | jq -rc '[.[] | select(. | startswith("Formula"))]') >> $GITHUB_OUTPUT
+        echo "casks=$(echo "$CHANGED_FILES" | jq -rc '[.[] | select(. | startswith("Casks"))]')" >> "$GITHUB_OUTPUT"
+        echo "formula=$(echo "$CHANGED_FILES" | jq -rc '[.[] | select(. | startswith("Formula"))]')" >> "$GITHUB_OUTPUT"
 
   tag-casks:
     needs: prepare
@@ -55,7 +60,7 @@ jobs:
       - name: tag casks
         run: |
           for cask in $(echo '${{ needs.prepare.outputs.casks }}' | jq -rc .[]); do
-            FORMULA_NAME="$(basename $cask .rb)"
+            FORMULA_NAME="$(basename "$cask" .rb)"
             FORMULA_VERSION=$(grep "version " "$cask" | head -n 1 | awk '{ print $2 }' | cut -d '"' -f 2)
             TAG_MESSAGE="${FORMULA_NAME}-${FORMULA_VERSION}"
 
@@ -132,17 +137,21 @@ jobs:
 
       - name: bottle and tag
         id: bottle-and-tag
+        env:
+          GITHUB_REPO_URL: ${{ github.server_url}}/${{ github.repository }}
         run: |
           declare -A tag_array
           for formula in $(echo '${{ needs.prepare.outputs.formula }}' | jq -rc .[]); do
-            FORMULA_NAME="$(basename $formula .rb)"
-            FORMULA_TAP=$(echo ${{ github.repository }} | cut -d / -f 1)/$(echo ${{ github.repository }} | cut -d / -f 2 | cut -d - -f 2)/$FORMULA_NAME
-            FORMULA_VERSION=$(jq -cr .['"'$FORMULA_TAP'"'].formula.pkg_version ${FORMULA_NAME}-*.bottle.json | head -n 1)
+            FORMULA_NAME="$(basename "$formula" .rb)"
+            BOTTLE_FILE="$(find . -type f -name "$FORMULA_NAME-*bottle.*json" -print -quit)"
+            FORMULA_TAP="$(echo "$GITHUB_REPOSITORY" | cut -d / -f 1)/$(echo "$GITHUB_REPOSITORY" | cut -d / -f 2 | cut -d - -f 2)"
+            FORMULA_FULL_NAME="$FORMULA_TAP/$FORMULA_NAME"
+            FORMULA_VERSION=$(jq -cr .['"'"$FORMULA_FULL_NAME"'"'].formula.pkg_version "$BOTTLE_FILE")
             TAG_MESSAGE="${FORMULA_NAME}-${FORMULA_VERSION}"
 
             brew bottle --merge --write \
-              --root-url ${{ github.server_url }}/${{ github.repository }}/releases/download/$FORMULA_NAME-$FORMULA_VERSION \
-              ${FORMULA_NAME}-*.bottle.json
+              --root-url "$GITHUB_REPO_URL/releases/download/$FORMULA_NAME-$FORMULA_VERSION" \
+              "$BOTTLE_FILE"
 
             git tag -a "$TAG_MESSAGE" -m "$TAG_MESSAGE"
             tag_array["$formula"]="$TAG_MESSAGE"
@@ -151,7 +160,7 @@ jobs:
           git -c push.default=current push
 
           output_json=$(comma=''; echo -n '{' ; for key in "${!tag_array[@]}"; do echo -n $comma '"'"$key"'"':'"'"${tag_array[$key]}"'"'; comma=","; done; echo -n "}")
-          echo "tag-array=$output_json" >> $GITHUB_OUTPUT
+          echo "tag-array=$output_json" >> "$GITHUB_OUTPUT"
 
   release:
     needs: [prepare, build, tag]
@@ -167,13 +176,18 @@ jobs:
           name: formula-bottles
 
       - id: get-bottle-names
-        run: echo "value=$(echo $(basename ${{ matrix.formula }} .rb)'-*bottle.*tar.gz')" >> $GITHUB_OUTPUT
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: |
+          echo "value=$(echo "$(basename "$FORMULA" .rb)-*bottle.*tar.gz")" >> "$GITHUB_OUTPUT"
 
       - id: get-tag-name
         run: |
+          echo '${{ matrix.formula }}'
+          echo '${{ needs.tag.outputs.tag-array }}'
+          echo '${{ needs.tag.outputs.tag-array }}' | jq -rc .['"'${{ matrix.formula }}'"']
           TAG_NAME=$(echo '${{ needs.tag.outputs.tag-array }}' | jq -rc .['"'${{ matrix.formula }}'"'])
-          echo $TAG_NAME
-          echo "tag-name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "tag-name=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Release (${{ matrix.formula }})
         uses: softprops/action-gh-release@v1
