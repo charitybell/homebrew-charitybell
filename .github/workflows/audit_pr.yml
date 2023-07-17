@@ -2,6 +2,9 @@ name: Audit PR
 
 on: [pull_request]
 
+env:
+  GITHUB_REPOSITORY: ${{ github.repository }}
+
 jobs:
   prepare:
     outputs:
@@ -22,9 +25,11 @@ jobs:
           json: true
 
       - id: set-output-matrix
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo casks=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | jq -rc '[.[] | select(. | startswith("Casks"))]') >> $GITHUB_OUTPUT
-          echo formula=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | jq -rc '[.[] | select(. | startswith("Formula"))]') >> $GITHUB_OUTPUT
+          echo "casks=$(echo "$CHANGED_FILES" | jq -rc '[.[] | select(. | startswith("Casks"))]')" >> "$GITHUB_OUTPUT"
+          echo "formula=$(echo "$CHANGED_FILES" | jq -rc '[.[] | select(. | startswith("Formula"))]')" >> "$GITHUB_OUTPUT"
 
   audit-casks:
     needs: prepare
@@ -40,9 +45,11 @@ jobs:
 
       - name: Audit cask (${{ matrix.cask }})
         continue-on-error: true
+        env:
+          CASK: ${{ matrix.cask }}
         run: |
           brew audit --os all --arch all --strict --online --git \
-            ${{ github.repository }}/$(basename ${{ matrix.cask }} .rb)
+            "$GITHUB_REPOSITORY/$(basename "$CASK" .rb)"
 
   audit:
     needs: prepare
@@ -58,9 +65,11 @@ jobs:
 
       - name: Audit formula (${{ matrix.formula }})
         continue-on-error: true
+        env:
+          FORMULA: ${{ matrix.formula }}
         run: |
           brew audit --os all --arch all --strict --online --git \
-            ${{ github.repository }}/$(basename ${{ matrix.formula }} .rb)
+            "$GITHUB_REPOSITORY/$(basename "$FORMULA" .rb)"
 
   install:
     needs: [prepare, audit]
@@ -76,4 +85,7 @@ jobs:
       - uses: Homebrew/actions/setup-homebrew@master
 
       - name: Install formula (${{ matrix.formula }})
-        run: brew install --build-from-source ${{ github.repository }}/$(basename ${{ matrix.formula }} .rb )
+        env:
+          FORMULA: ${{ matrix.formula }}
+        run: |
+          brew install --build-from-source "$GITHUB_REPOSITORY/$(basename "$FORMULA" .rb )"
