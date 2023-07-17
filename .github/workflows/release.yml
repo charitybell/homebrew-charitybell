@@ -92,19 +92,27 @@ jobs:
 
       - name: build bottle (${{ matrix.formula }})
         id: build-bottle
+        env:
+          FORMULA: ${{ matrix.formula }}
+          GITHUB_REPO_URL: ${{ github.server_url}}/${{ github.repository }}
         run: |
-          FORMULA_BASENAME=$(basename ${{ matrix.formula }} .rb)
-          FORMULA_TAP=$(echo ${{ github.repository }} | cut -d / -f 1)/$(echo ${{ github.repository }} | cut -d / -f 2 | cut -d - -f 2)
+          FORMULA_BASENAME="$(basename "$FORMULA" .rb)"
+          FORMULA_TAP="$(echo "$GITHUB_REPOSITORY" | cut -d / -f 1)/$(echo "$GITHUB_REPOSITORY" | cut -d / -f 2 | cut -d - -f 2)"
           FORMULA_NAME="$FORMULA_TAP/$FORMULA_BASENAME"
+          if [ "$(echo '${{ matrix.os }}' | cut -d - -f 1)" = 'macos' ] && grep 'depends_on .python@.*' "$FORMULA"; then
+            # github's macos runners come with python, which breaks formulae that depend on python
+            rm -f /usr/local/bin/{2to3,python,idle,python*-config,pydoc}*
+          fi
           brew install --build-bottle "$FORMULA_NAME"
-          FORMULA_VERSION="$(brew info --json "$FORMULA_BASENAME" | jq -rc '.[0].versions.stable')"
+          FORMULA_VERSION="$(brew info --json "$FORMULA_NAME" | jq -rc '.[0].installed[0].version')"
           brew bottle --force-core-tap --no-rebuild --json \
-            --root-url ${{ github.server_url }}/${{ github.repository }}/releases/download/"$FORMULA_BASENAME"-"$FORMULA_VERSION" \
+            --root-url "$GITHUB_REPO_URL/releases/download/$FORMULA_BASENAME-$FORMULA_VERSION" \
             "$FORMULA_NAME"
-          BASE_LOCAL_FILENAME=$(basename $(jq -r '.[].bottle.tags|.[].local_filename' $FORMULA_BASENAME-*bottle.*json) .tar.gz)
-          BASE_FILENAME=$(basename $(jq -r '.[].bottle.tags|.[].filename' $FORMULA_BASENAME-*bottle.*json) .tar.gz)
-          mv $BASE_LOCAL_FILENAME.json $BASE_FILENAME.json
-          mv $BASE_LOCAL_FILENAME.tar.gz $BASE_FILENAME.tar.gz
+          BOTTLE_FILE="$(find . -type f -name "$FORMULA_BASENAME-*bottle.*json" -print -quit)"
+          BASE_LOCAL_FILENAME="$(basename "$(jq -r '.[].bottle.tags|.[].local_filename' "$BOTTLE_FILE")" .tar.gz)"
+          BASE_FILENAME="$(basename "$(jq -r '.[].bottle.tags|.[].filename' "$BOTTLE_FILE")" .tar.gz)"
+          mv "$BASE_LOCAL_FILENAME.json" "$BASE_FILENAME.json"
+          mv "$BASE_LOCAL_FILENAME.tar.gz" "$BASE_FILENAME.tar.gz"
 
       - uses: actions/upload-artifact@v3
         with:
