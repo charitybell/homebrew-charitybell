@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: {}
 
+env:
+  GITHUB_REPOSITORY: ${{ github.repository }}
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -21,8 +24,7 @@ jobs:
 
       - id: livecheck-results
         run: |
-          echo "formula=$(brew livecheck --tap ${{ github.repository }} --json --newer-only | jq -rc 'map(if .cask then (.type = "cask" | .name = .cask) else (.type = "formula" | .name = .formula) end)')"
-          echo "formula=$(brew livecheck --tap ${{ github.repository }} --json --newer-only | jq -rc 'map(if .cask then (.type = "cask" | .name = .cask) else (.type = "formula" | .name = .formula) end)')" >> $GITHUB_OUTPUT
+          echo "formula=$(brew livecheck --tap "$GITHUB_REPOSITORY" --json --newer-only | jq -rc 'map(if .cask then (.type = "cask" | .name = .cask) else (.type = "formula" | .name = .formula) end)')" >> "$GITHUB_OUTPUT"
   create-issue:
     runs-on: ubuntu-latest
     needs: prepare
@@ -35,12 +37,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - run: |
-          echo ${{ matrix.formula.type }}
-          echo ${{ matrix.formula.name }}
-          echo ${{ matrix.formula.version.current }}
-          echo ${{ matrix.formula.version.latest }}
-
       - uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -48,7 +44,6 @@ jobs:
           FORMULA_NAME: ${{ matrix.formula.name }}
           FORMULA_VERSION_CURRENT: ${{ matrix.formula.version.current }}
           FORMULA_VERSION_LATEST: ${{ matrix.formula.version.latest }}
-          TEST: "foo bar"
         with:
           filename: .github/formula_update_template.md
           update_existing: true
