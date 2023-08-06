@@ -1,0 +1,29 @@
+name: Bump formula/cask revision
+
+on:
+  workflow_dispatch:
+    inputs:
+      formula:
+        description: 'Formula/cask basename'
+        required: true
+        type: string
+
+env:
+  GITHUB_REPOSITORY: ${{ github.repository }}
+  HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+  FORMULA_NAME: ${{ github.repository }}/${{ inputs.formula }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - uses: Homebrew/actions/setup-homebrew@master
+
+      - run: brew tap homebrew/core
+
+      - id: bump
+        run: brew bump --full-name --open-pr "$FORMULA_NAME"
