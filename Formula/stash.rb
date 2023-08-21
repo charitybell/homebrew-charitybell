@@ -1,8 +1,8 @@
 class Stash < Formula
   desc "Organizer for your porn, written in Go"
   homepage "https://github.com/stashapp/stash"
-  url "https://github.com/stashapp/stash/archive/refs/tags/v0.21.0.tar.gz"
-  sha256 "f52115d19d4e45ff9fb0cd8a1ee4e2d467bcfd51cad58db1ed9d34e135e78132"
+  url "https://github.com/stashapp/stash/archive/refs/tags/v0.22.0.tar.gz"
+  sha256 "dd8496742ef7a59611ac8c6b0ef8c993d019b54db22d2b37b172ce82076afc4c"
   license "AGPL-3.0-only"
   head "https://github.com/stashapp/stash.git", branch: "develop"
 
