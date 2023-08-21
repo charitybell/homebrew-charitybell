@@ -47,6 +47,7 @@ jobs:
         env:
           CASK: ${{ matrix.cask }}
         run: |
+          brew style "$GITHUB_REPOSITORY/$(basename "$CASK" .rb)"
           brew audit --os all --arch all --strict --online --git \
             "$GITHUB_REPOSITORY/$(basename "$CASK" .rb)"
 
@@ -67,6 +68,7 @@ jobs:
         env:
           FORMULA: ${{ matrix.formula }}
         run: |
+          brew style "$GITHUB_REPOSITORY/$(basename "$FORMULA" .rb)"
           brew audit --os all --arch all --strict --online --git \
             "$GITHUB_REPOSITORY/$(basename "$FORMULA" .rb)"
 
