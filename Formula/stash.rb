@@ -13,7 +13,7 @@ class Stash < Formula
   depends_on "ffmpeg"
 
   service do
-    run [bin/"stash"]
+    run [opt_bin/"stash"]
     keep_alive crashed: true
   end
 
