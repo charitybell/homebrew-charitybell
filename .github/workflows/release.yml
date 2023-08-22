@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: Homebrew/actions/git-user-config@master
 
@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: Homebrew/actions/git-user-config@master
 
