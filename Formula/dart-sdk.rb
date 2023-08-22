@@ -1,5 +1,5 @@
 class DartSdk < Formula
-  desc "Dart SDK, VM, and core libraries"
+  desc "SDK, VM, and core libraries for the Dart programming language"
   homepage "https://dart.dev"
   url "https://github.com/dart-lang/sdk/archive/refs/tags/3.0.6.tar.gz"
   sha256 "7df8264f03c19ba87453061c93edb6a0420784af130f15b421237d16c725aaf4"
@@ -15,7 +15,7 @@ class DartSdk < Formula
   end
 
   depends_on xcode: :build
-  uses_from_macos "python@3.11" => :build
+  depends_on "python@3.11" => :build
 
   resource "depot-tools" do
     url "https://chromium.googlesource.com/chromium/tools/depot_tools.git", branch: "main"
@@ -39,13 +39,13 @@ class DartSdk < Formula
 
       # adapted from dart-sdk/sdk/sdk/bin/dart script
       out_dir = if OS.mac?
-                  File.absolute_path("#{Dir.pwd}/xcodebuild/")
-                else
-                  File.absolute_path("#{Dir.pwd}/out/")
-                end
+        File.absolute_path("#{Dir.pwd}/xcodebuild/")
+      else
+        File.absolute_path("#{Dir.pwd}/out/")
+      end
 
       dirs = Dir["#{out_dir}/*"]
-      configs = ["ReleaseX64", "ReleaseARM64", "ReleaseIA32", "DebugX64", "DebugIA32", "ReleaseARM"]
+      configs = %w[ReleaseX64 ReleaseARM64 ReleaseIA32 DebugX64 DebugIA32 ReleaseARM]
 
       dart_configuration = nil
       configs.each do |config|
@@ -60,7 +60,7 @@ class DartSdk < Formula
       end
 
       if dart_configuration.nil?
-        odie "couldn't find a valid dart build. if you see this, please file a bug report to charitybell/homebrew-charitybell"
+        odie "couldn't find a valid dart build. please file a bug report to charitybell/homebrew-charitybell"
       end
 
       libexec.install Dir["#{out_dir}/#{dart_configuration}/dart-sdk/*"]
@@ -68,13 +68,10 @@ class DartSdk < Formula
       bin.install_symlink "#{libexec}/bin/dart"
       bin.write_exec_script Dir["#{libexec}/bin/{pub,dart?*}"]
     end
-
   end
 
   test do
     output = shell_output "#{bin}/dart --version"
-    unless output.include? version
-      odie "wrong version was built! wanted #{version}, but found `#{output}`"
-    end
+    odie "wrong version was built! wanted #{version}, but found `#{output}`" unless output.include? version
   end
 end

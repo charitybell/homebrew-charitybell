@@ -5,7 +5,6 @@ class Feed2exec < Formula
   homepage "https://gitlab.com/anarcat/feed2exec"
   # setuptools-scm fails to install if we don't use a complete git repository
   url "https://gitlab.com/anarcat/feed2exec.git", tag: "0.19.0", revision: "1bfc675a3fc74cbd2b14a860fd99831f2924d251"
-  sha256 "29af89985b85f59d61c30af3ba2c7e65979fe1160808c8d8fd87da83a25de059"
   license "AGPL-3.0-only"
   head "https://gitlab.com/anarcat/feed2exec.git", branch: "main"
 
@@ -155,6 +154,7 @@ class Feed2exec < Formula
   end
 
   test do
-    system "#{bin}/feed2exec", "parse", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "--output", "echo", "--args", "{item.title}"
+    system "#{bin}/feed2exec", "parse", "https://www.nasa.gov/rss/dyn/breaking_news.rss", "--output", "echo",
+"--args", "{item.title}"
   end
 end
